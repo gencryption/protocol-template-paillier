@@ -1,12 +1,21 @@
 """FHE Decryption and Result Interpretation for SecureGenomics Protocol."""
 
-import tenseal as ts
+import pickle
+from shared import CryptoContext
 from typing import Dict, Any
 
 def decrypt_result(encrypted_result: bytes, private_crypto_context: bytes) -> Dict[str, Any]:
-    private_crypto_context = ts.context_from(private_crypto_context)
-    encrypted_result = ts.bfv_vector_from(private_crypto_context, encrypted_result)
-    result = encrypted_result.decrypt()
+    encrypted_result = pickle.loads(encrypted_result)
+    private_crypto_context = CryptoContext.deserialize(private_crypto_context)
+    
+    lambda_, mu = private_crypto_context.private_key
+    n, _ = private_crypto_context.public_key
+    
+    def decrypt_single_value(c: int) -> int:
+        l = (pow(c, lambda_, n**2) - 1) // n
+        return (l * mu) % n
+    
+    result = map(decrypt_single_value, encrypted_result)
     return result
 
 def interpret_result(result):

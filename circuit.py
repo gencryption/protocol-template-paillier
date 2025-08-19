@@ -1,21 +1,19 @@
 """FHE Computation Circuit for SecureGenomics Protocol."""
 
 from typing import List
-import tenseal as ts
+from shared import CryptoContext
+import pickle
 
 def compute(encrypted_datasets: List[bytes], public_crypto_context: bytes) -> bytes:
     # Deserialize the public context
-    context = ts.context_from(public_crypto_context)
+    context = CryptoContext.deserialize(public_crypto_context)
+    n, _ = context.public_key
     
-    # Deserialize all encrypted vectors using the context
-    vectors = [ts.bfv_vector_from(context=context, data=data) for data in encrypted_datasets]
+    encrypted_results = encrypted_datasets[0]
     
-    # multiplication depth: 1
+    for vector in encrypted_datasets[1:]:
+        for i in range(len(encrypted_results)):
+            encrypted_results[i] = (encrypted_results[i] * vector[i]) % n**2
+            
+    return pickle.dumps(encrypted_results)
     
-    # Homomorphic sum
-    encrypted_result = vectors[0]
-    for vec in vectors[1:]:
-        encrypted_result += vec
-
-    # Serialize the result for return
-    return encrypted_result.serialize()
