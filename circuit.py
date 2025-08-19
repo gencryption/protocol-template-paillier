@@ -16,4 +16,3 @@ def compute(encrypted_datasets: List[bytes], public_crypto_context: bytes) -> by
             encrypted_results[i] = (encrypted_results[i] * vector[i]) % n**2
             
     return pickle.dumps(encrypted_results)
-    
